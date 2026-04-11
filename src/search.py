@@ -35,7 +35,7 @@ def search(query: str, limit: int = 3) -> list[dict]:
         collection_name=COLLECTION_NAME,
         data=[embedding],
         limit=limit,
-        output_fields=["text", "image_path", "page_num"],
+        output_fields=["text", "image_path", "page_num", "source_file"],
         search_params={"metric_type": "COSINE"},
     )
 
@@ -46,6 +46,7 @@ def search(query: str, limit: int = 3) -> list[dict]:
                 "text": hit["entity"]["text"],
                 "image_path": hit["entity"]["image_path"],
                 "page_num": hit["entity"]["page_num"],
+                "source_file": hit["entity"].get("source_file", ""),
                 "distance": hit["distance"],
             })
     return search_results

@@ -16,7 +16,12 @@ from pathlib import Path
 
 def cmd_process(args):
     from src.processing import pipeline
-    pipeline(args.file, screenshot_dir=args.screenshot_dir)
+    pipeline(args.file, screenshot_dir=args.screenshot_dir, reset=args.reset)
+
+
+def cmd_index(args):
+    from src.processing import pipeline_directory
+    pipeline_directory(args.directory, screenshot_dir=args.screenshot_dir, reset=args.reset)
 
 
 def cmd_search(args):
@@ -91,11 +96,31 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # process
-    p_process = subparsers.add_parser("process", help="Parse, embed, and store a PDF")
+    p_process = subparsers.add_parser("process", help="Parse, embed, and store a single PDF")
     p_process.add_argument("file", help="Path to the PDF file")
     p_process.add_argument(
         "-s", "--screenshot-dir", default="screenshots",
         help="Directory for page screenshots (default: screenshots/)",
+    )
+    p_process.add_argument(
+        "--reset", action="store_true",
+        help="Drop existing collection before processing",
+    )
+
+    # index (batch)
+    p_index = subparsers.add_parser("index", help="Index all PDFs in a directory")
+    p_index.add_argument("directory", help="Directory containing PDF files")
+    p_index.add_argument(
+        "-s", "--screenshot-dir", default="screenshots",
+        help="Directory for page screenshots (default: screenshots/)",
+    )
+    p_index.add_argument(
+        "--reset", action="store_true", default=True,
+        help="Drop existing collection before indexing (default: true)",
+    )
+    p_index.add_argument(
+        "--no-reset", action="store_false", dest="reset",
+        help="Keep existing data and add new documents",
     )
 
     # search
@@ -120,6 +145,8 @@ def main():
 
     if args.command == "process":
         cmd_process(args)
+    elif args.command == "index":
+        cmd_index(args)
     elif args.command == "search":
         cmd_search(args)
     elif args.command == "agent":

@@ -69,6 +69,7 @@ def handle_tool_call(tool_name: str, tool_input: dict) -> list[dict]:
         content_parts = []
         for r in results:
             text = (
+                f"SOURCE: {r.get('source_file', 'unknown')}\n"
                 f"PAGE SCREENSHOT PATH: {r['image_path']}\n"
                 f"PAGE: {r['page_num']}\n"
                 f"SIMILARITY: {r['distance']:.4f}\n\n"

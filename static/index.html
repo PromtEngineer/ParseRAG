@@ -390,7 +390,10 @@
                 <span id="badgeText">Checking...</span>
             </div>
             <button class="process-btn" id="processBtn" onclick="processPDF()" style="display:none;">
-                Process PDF
+                Process Sample PDF
+            </button>
+            <button class="process-btn" id="indexBtn" onclick="indexAll()">
+                Index All Documents
             </button>
         </section>
 
@@ -550,6 +553,37 @@
                 processBtn.disabled = false;
                 processBtn.textContent = 'Process PDF';
             }
+            progressBar.classList.remove('active');
+        }
+
+        // Index all documents
+        async function indexAll() {
+            const btn = document.getElementById('indexBtn');
+            btn.disabled = true;
+            btn.textContent = 'Indexing...';
+            setStatus('Indexing documents...', 'active');
+            progressBar.classList.add('active');
+
+            try {
+                const res = await fetch('/api/index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ directory: 'data/documents', reset: true }),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    badgeDot.className = 'badge-dot indexed';
+                    badgeText.textContent = `Indexed (${data.files} files, ${data.chunks} chunks)`;
+                    processBtn.style.display = 'none';
+                    setStatus('Ready', 'active');
+                } else {
+                    throw new Error(data.detail || 'Indexing failed');
+                }
+            } catch (e) {
+                setStatus('Error: ' + e.message, 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Index All Documents';
             progressBar.classList.remove('active');
         }
 

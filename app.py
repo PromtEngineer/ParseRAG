@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from src.agent import run_agent_stream
 from src.processing import (
     pipeline,
+    pipeline_directory,
     get_milvus_client,
     COLLECTION_NAME,
 )
@@ -37,6 +38,11 @@ class QueryRequest(BaseModel):
 
 class ProcessRequest(BaseModel):
     file: str = DEFAULT_PDF
+
+
+class IndexRequest(BaseModel):
+    directory: str = "data/documents"
+    reset: bool = True
 
 
 # --- Routes ---
@@ -72,6 +78,23 @@ async def process_pdf(req: ProcessRequest):
         stats = client.get_collection_stats(COLLECTION_NAME)
         count = stats.get("row_count", 0)
         return {"ok": True, "chunks": count}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/index")
+async def index_directory(req: IndexRequest):
+    """Index all PDFs in a directory."""
+    dir_path = Path(req.directory)
+    if not dir_path.exists():
+        raise HTTPException(404, f"Directory not found: {req.directory}")
+    try:
+        await asyncio.to_thread(pipeline_directory, str(dir_path), "screenshots", req.reset)
+        client = get_milvus_client()
+        stats = client.get_collection_stats(COLLECTION_NAME)
+        count = stats.get("row_count", 0)
+        pdf_count = len(list(dir_path.glob("**/*.pdf")))
+        return {"ok": True, "files": pdf_count, "chunks": count}
     except Exception as e:
         raise HTTPException(500, str(e))
 
