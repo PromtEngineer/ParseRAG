@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParseRAG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f1eb;
+            --bg-alt: #ebe7df;
+            --ink: #1a1a1a;
+            --ink-light: #4a4a4a;
+            --ink-muted: #8a8a8a;
+            --accent: #c45d3a;
+            --accent-light: #e8d5ce;
+            --success: #2d6a4f;
+            --border: #d4d0c8;
+            --blue: #0969da;
+            --purple: #8250df;
+            --amber: #bf8700;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        ::selection { background: var(--accent); color: var(--bg); }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .page { max-width: 1400px; margin: 0 auto; padding: 40px; }
+
+        /* Masthead */
+        .masthead {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        .title-block { display: flex; align-items: baseline; gap: 16px; }
+
+        .site-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 42px;
+            font-weight: 400;
+            letter-spacing: -1px;
+        }
+
+        .version {
+            font-size: 11px;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ink-muted);
+        }
+        .status-dot.active { background: var(--success); }
+        .status-dot.error { background: var(--accent); }
+        .status-dot.warning { background: var(--amber); }
+
+        /* Process Section */
+        .process-section {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .process-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            border: 1px solid var(--border);
+            background: var(--bg-alt);
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--ink-muted);
+        }
+        .badge-dot.indexed { background: var(--success); }
+
+        .process-btn {
+            background: transparent;
+            border: 1px solid var(--ink);
+            padding: 6px 16px;
+            font-family: inherit;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .process-btn:hover { background: var(--ink); color: var(--bg); }
+        .process-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Query Section */
+        .query-section { margin-bottom: 40px; }
+
+        .query-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--ink-muted);
+            margin-bottom: 12px;
+        }
+
+        .query-row { display: flex; gap: 0; }
+
+        .query-input {
+            flex: 1;
+            background: var(--bg);
+            border: 2px solid var(--ink);
+            border-right: none;
+            padding: 16px 20px;
+            font-family: inherit;
+            font-size: 16px;
+            color: var(--ink);
+        }
+        .query-input:focus { outline: none; background: #fff; }
+        .query-input::placeholder { color: var(--ink-muted); font-style: italic; }
+
+        .query-btn {
+            background: var(--ink);
+            color: var(--bg);
+            border: 2px solid var(--ink);
+            padding: 16px 32px;
+            font-family: inherit;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .query-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+        .query-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Progress */
+        .progress-bar {
+            height: 3px;
+            background: var(--border);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+        }
+        .progress-bar.active .progress-fill {
+            animation: indeterminate 1.5s infinite;
+        }
+        @keyframes indeterminate {
+            0% { transform: translateX(-100%); width: 30%; }
+            50% { width: 50%; }
+            100% { transform: translateX(400%); width: 30%; }
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .section { min-height: 200px; }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--ink-muted);
+        }
+
+        .section-meta {
+            font-size: 11px;
+            color: var(--ink-muted);
+        }
+
+        /* Steps */
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .step {
+            background: var(--bg-alt);
+            border-left: 3px solid var(--ink-muted);
+            padding: 16px 20px;
+            animation: appear 0.3s ease;
+        }
+        @keyframes appear {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .step.search { border-left-color: var(--blue); }
+        .step.get_image { border-left-color: var(--purple); }
+        .step.thinking { border-left-color: var(--amber); }
+        .step.error { border-left-color: var(--accent); }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+
+        .step-id { font-weight: 600; font-size: 12px; }
+
+        .step-tool {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--ink-light);
+        }
+
+        .step-detail {
+            font-size: 13px;
+            color: var(--ink-light);
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+        .step-detail::before { content: '→ '; color: var(--ink-muted); }
+
+        .step-preview {
+            font-size: 12px;
+            color: var(--ink-muted);
+            font-style: italic;
+            line-height: 1.5;
+            max-height: 80px;
+            overflow: hidden;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: var(--ink-muted);
+            text-align: center;
+        }
+        .empty-state .prompt {
+            font-family: 'Instrument Serif', serif;
+            font-size: 24px;
+            font-style: italic;
+            margin-bottom: 8px;
+            color: var(--ink-light);
+        }
+        .empty-state .hint { font-size: 12px; }
+
+        /* Result */
+        .result-content { line-height: 1.8; }
+
+        .result-text {
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .result-text strong { font-weight: 700; }
+
+        /* Stats Bar */
+        .stats-bar {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid var(--ink);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .stat { text-align: center; }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'Instrument Serif', serif;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--ink-muted);
+            margin-top: 4px;
+        }
+
+        /* Loading */
+        .loading-text {
+            font-style: italic;
+            color: var(--ink-muted);
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Scrollbar */
+        .scrollable { max-height: 350px; overflow-y: auto; }
+        .scrollable::-webkit-scrollbar { width: 8px; }
+        .scrollable::-webkit-scrollbar-track { background: var(--bg-alt); }
+        .scrollable::-webkit-scrollbar-thumb { background: var(--border); }
+        .scrollable::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+        /* Footer */
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--ink-muted);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Masthead -->
+        <header class="masthead">
+            <div class="title-block">
+                <h1 class="site-title">ParseRAG</h1>
+                <span class="version">LiteParse + Milvus + Claude</span>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+        </header>
+
+        <!-- Process Section -->
+        <section class="process-section">
+            <div class="process-badge">
+                <span class="badge-dot" id="badgeDot"></span>
+                <span id="badgeText">Checking...</span>
+            </div>
+            <button class="process-btn" id="processBtn" onclick="processPDF()" style="display:none;">
+                Process PDF
+            </button>
+        </section>
+
+        <!-- Query -->
+        <section class="query-section">
+            <div class="query-label">Ask a question about the medical factsheet</div>
+            <div class="query-row">
+                <input type="text" class="query-input" id="queryInput"
+                    placeholder="e.g. What category does Warfarin fall under?"
+                    autocomplete="off">
+                <button class="query-btn" id="queryBtn" onclick="executeQuery()">Execute</button>
+            </div>
+        </section>
+
+        <!-- Progress -->
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill"></div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Steps -->
+            <section class="section">
+                <div class="section-header">
+                    <span class="section-title">Execution Log</span>
+                    <span class="section-meta" id="stepCount">&mdash;</span>
+                </div>
+                <div class="scrollable">
+                    <div class="steps-list" id="stepsList">
+                        <div class="empty-state">
+                            <div class="prompt">Awaiting query...</div>
+                            <div class="hint">Enter a question to begin document exploration</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result -->
+            <section class="section">
+                <div class="section-header">
+                    <span class="section-title">Response</span>
+                </div>
+                <div class="result-content scrollable" id="resultContent">
+                    <div class="empty-state">
+                        <div class="prompt">No results yet</div>
+                        <div class="hint">Results will appear here after execution</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar" id="statsBar" style="display: none;">
+            <div class="stat">
+                <div class="stat-value" id="statSteps">0</div>
+                <div class="stat-label">Steps</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="statToolCalls">0</div>
+                <div class="stat-label">Tool Calls</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="statSearches">0</div>
+                <div class="stat-label">Searches</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="statImages">0</div>
+                <div class="stat-label">Images</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Powered by LiteParse &middot; Milvus &middot; Claude
+        </footer>
+    </div>
+
+    <script>
+        let isRunning = false;
+
+        const queryInput = document.getElementById('queryInput');
+        const queryBtn = document.getElementById('queryBtn');
+        const stepsList = document.getElementById('stepsList');
+        const stepCountEl = document.getElementById('stepCount');
+        const resultContent = document.getElementById('resultContent');
+        const statsBar = document.getElementById('statsBar');
+        const progressBar = document.getElementById('progressBar');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const processBtn = document.getElementById('processBtn');
+        const badgeDot = document.getElementById('badgeDot');
+        const badgeText = document.getElementById('badgeText');
+
+        queryInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter' && !isRunning) executeQuery();
+        });
+
+        // Escape HTML
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        // Status
+        function setStatus(text, state) {
+            statusText.textContent = text;
+            statusDot.className = 'status-dot' + (state ? ' ' + state : '');
+        }
+
+        // Check if PDF is processed
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if (data.processed) {
+                    badgeDot.className = 'badge-dot indexed';
+                    badgeText.textContent = `Processed (${data.chunk_count} chunks)`;
+                    processBtn.style.display = 'none';
+                    setStatus('Ready', 'active');
+                } else {
+                    badgeDot.className = 'badge-dot';
+                    badgeText.textContent = 'Not Processed';
+                    processBtn.style.display = 'inline-block';
+                    setStatus('PDF not processed', 'warning');
+                }
+            } catch (e) {
+                badgeText.textContent = 'Error';
+                setStatus('Server error', 'error');
+            }
+        }
+
+        // Process PDF
+        async function processPDF() {
+            processBtn.disabled = true;
+            processBtn.textContent = 'Processing...';
+            setStatus('Processing PDF...', 'active');
+            progressBar.classList.add('active');
+
+            try {
+                const res = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    badgeDot.className = 'badge-dot indexed';
+                    badgeText.textContent = `Processed (${data.chunks} chunks)`;
+                    processBtn.style.display = 'none';
+                    setStatus('Ready', 'active');
+                } else {
+                    throw new Error(data.detail || 'Processing failed');
+                }
+            } catch (e) {
+                setStatus('Error: ' + e.message, 'error');
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process PDF';
+            }
+            progressBar.classList.remove('active');
+        }
+
+        // Execute query
+        async function executeQuery() {
+            const question = queryInput.value.trim();
+            if (!question || isRunning) return;
+
+            isRunning = true;
+            queryBtn.disabled = true;
+
+            stepsList.innerHTML = '';
+            resultContent.innerHTML = '<div class="loading-text">Thinking...</div>';
+            statsBar.style.display = 'none';
+            stepCountEl.textContent = '\u2014';
+            progressBar.classList.add('active');
+            setStatus('Executing', 'active');
+
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question }),
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const raw = line.slice(6);
+                            if (raw === '[DONE]') continue;
+                            try {
+                                handleEvent(JSON.parse(raw));
+                            } catch (e) { /* skip malformed */ }
+                        }
+                    }
+                }
+            } catch (e) {
+                resultContent.innerHTML = `<div class="empty-state">
+                    <div class="prompt">Error</div>
+                    <div class="hint">${esc(e.message)}</div>
+                </div>`;
+                setStatus('Error', 'error');
+            }
+
+            isRunning = false;
+            queryBtn.disabled = false;
+            progressBar.classList.remove('active');
+        }
+
+        // Handle SSE events
+        function handleEvent(event) {
+            switch (event.type) {
+                case 'start':
+                    break;
+
+                case 'thinking': {
+                    addStep('thinking', event.step, 'Thinking', event.content, '');
+                    break;
+                }
+
+                case 'tool_call': {
+                    const detail = event.tool === 'search'
+                        ? `query: "${event.input.query}"${event.input.limit ? ` (limit: ${event.input.limit})` : ''}`
+                        : `path: ${event.input.image_path}`;
+                    addStep(event.tool, event.step, event.tool, detail, event.preview);
+                    break;
+                }
+
+                case 'answer': {
+                    renderAnswer(event.content);
+                    if (event.stats) {
+                        statsBar.style.display = 'grid';
+                        document.getElementById('statSteps').textContent = event.stats.steps;
+                        document.getElementById('statToolCalls').textContent = event.stats.tool_calls;
+                        document.getElementById('statSearches').textContent = event.stats.search_calls;
+                        document.getElementById('statImages').textContent = event.stats.image_calls;
+                    }
+                    setStatus('Complete', 'active');
+                    break;
+                }
+
+                case 'error': {
+                    addStep('error', 0, 'Error', event.message, '');
+                    resultContent.innerHTML = `<div class="empty-state">
+                        <div class="prompt">Error</div>
+                        <div class="hint">${esc(event.message)}</div>
+                    </div>`;
+                    setStatus('Error', 'error');
+                    break;
+                }
+            }
+        }
+
+        // Add a step card
+        function addStep(type, step, toolName, detail, preview) {
+            stepCountEl.textContent = `${step} ${step === 1 ? 'step' : 'steps'}`;
+
+            const div = document.createElement('div');
+            div.className = `step ${type}`;
+            div.innerHTML = `
+                <div class="step-header">
+                    <span class="step-id">#${step}</span>
+                    <span class="step-tool">${esc(toolName)}</span>
+                </div>
+                ${detail ? `<div class="step-detail">${esc(detail)}</div>` : ''}
+                ${preview ? `<div class="step-preview">${esc(preview)}</div>` : ''}
+            `;
+            stepsList.appendChild(div);
+            stepsList.scrollTop = stepsList.scrollHeight;
+        }
+
+        // Render final answer
+        function renderAnswer(text) {
+            // Basic markdown: **bold**, newlines, bullet lists
+            let html = esc(text);
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\n- /g, '\n• ');
+            resultContent.innerHTML = `<div class="result-text">${html}</div>`;
+        }
+
+        // Init
+        checkStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+[
+  {
+    "id": "DL-02",
+    "category": "direct_lookup",
+
+    "question": "What category does Warfarin fall under?",
+    "answer_type": "free_text",
+    "expected_answer": "Blood Thinner/Blood Clot Treatment",
+    "scoring_rubric": {
+      "full_marks": "Names the category 'Blood Thinner/Blood Clot Treatment' or a close paraphrase (e.g., 'blood thinners', 'blood clot treatment')",
+      "half_marks": "Mentions blood thinning or clot treatment but is vague or partially correct",
+      "zero_marks": "Names a wrong category or gives an unrelated answer"
+    },
+    "scoring": "LLM-as-judge against rubric. Accept the exact category name or any reasonable paraphrase.",
+    "reasoning": "Warfarin (Coumadin) is one of 8 drugs in this category. Agent must resolve the drug to its category."
+  },
+  {
+    "id": "DL-03",
+    "category": "direct_lookup",
+
+    "question": "What type of blood pressure medication is Diltiazem classified as in the chart?",
+    "answer_type": "free_text",
+    "expected_answer": "Calcium Channel Blocker",
+    "scoring_rubric": {
+      "full_marks": "States 'Calcium Channel Blocker' (or close variant)",
+      "half_marks": "Says it lowers blood pressure / heart rate but doesn't specify the sub-type",
+      "zero_marks": "Says 'Beta Blocker' or names a wrong classification"
+    },
+    "scoring": "LLM-as-judge against rubric.",
+    "reasoning": "Diltiazem is under 'Lowers Blood Pressure and Heart Rate' with sub-header 'Calcium Channel Blockers', distinct from Beta Blockers (Atenolol, Carvedilol, Metoprolol) in the same category. Chunked text extraction often loses sub-header hierarchy. This is a realistic pharmacist question. Potential SQL query tool may suit this better: a structured schema with a sub_classification column would handle this trivially via SELECT sub_class FROM drugs WHERE name='Diltiazem'."
+  },
+  {
+    "id": "SYN-01",
+    "category": "synonym_paraphrase",
+
+    "question": "What medications can I take for nausea?",
+    "answer_type": "set",
+    "expected_answer": ["Ondansetron", "Promethazine", "Scopolamine"],
+    "acceptable_aliases": {
+      "Ondansetron": ["Zofran"],
+      "Promethazine": ["Phenergan"]
+    },
+    "scoring": "Set match. Accept brand names. Full marks for all 3.",
+    "reasoning": "'Nausea' does not appear in the PDF. Agent must map it to 'Queasiness or Throwing Up' category."
+  },
+  {
+    "id": "SYN-02",
+    "category": "synonym_paraphrase",
+
+    "question": "Which drugs for high blood pressure can cause a cough?",
+    "answer_type": "set",
+    "expected_answer": [
+      "Benzapril",
+      "Captopril",
+      "Enalapril",
+      "Lisinopril",
+      "Quinapril",
+      "Ramipril",
+      "Candesartan",
+      "Irbesartan",
+      "Olmesartan",
+      "Valsartan",
+      "Losartan",
+      "Furosemide",
+      "Hydrochlorothiazide",
+      "Spironolactone"
+    ],
+    "acceptable_aliases": {
+      "Candesartan": ["Atacand"],
+      "Irbesartan": ["Avapro"],
+      "Olmesartan": ["Benicar"],
+      "Valsartan": ["Diovan"],
+      "Losartan": ["Cozarr"],
+      "Furosemide": ["Lasix"]
+    },
+    "scoring": "Partial credit proportional to recall. Must NOT include drugs from 'Lowers Blood Pressure and Heart Rate' category (which does NOT list cough). Precision penalty for incorrect inclusions.",
+    "reasoning": "(1) 'High blood pressure' maps to 'Lowers Blood Pressure' (synonym). (2) Must distinguish from 'Lowers Blood Pressure and Heart Rate' — similar name but different category without cough. (3) Sub-headers (ACE Inhibitors, ARBs, Diuretics) and comma-separated generics without brand names."
+  },
+  {
+    "id": "SYN-03",
+    "category": "synonym_paraphrase",
+
+    "question": "Can vomiting be a side effect of cholesterol medication?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. 'Throwing up' (the PDF's term for vomiting) is NOT listed under Lowers Cholesterol. Side effects are: Headache, Muscle pain, Upset stomach.",
+    "reasoning": "'Vomiting' must be resolved to 'Throwing up' (PDF's term), then the agent must check the Lowers Cholesterol side effects and confirm absence."
+  },
+  {
+    "id": "SYN-04",
+    "category": "synonym_paraphrase",
+
+    "question": "What are the side effects of medications used to treat acid reflux?",
+    "answer_type": "set",
+    "expected_answer": [
+      "Constipation",
+      "Diarrhea",
+      "Headache",
+      "Throwing up",
+      "Upset stomach"
+    ],
+    "scoring": "Set match (order-insensitive). Full marks if all 5 present and no extras.",
+    "reasoning": "'Acid reflux' does not appear in the PDF. Agent must map it to 'Heartburn or Reflux' and return the correct side effects."
+  },
+  {
+    "id": "BG-01",
+    "category": "brand_generic_resolution",
+
+    "question": "What is Xanax used for?",
+    "answer_type": "free_text",
+    "expected_answer": "Calms Nerves or Makes You Sleepy",
+    "scoring_rubric": {
+      "full_marks": "Names the category 'Calms Nerves or Makes You Sleepy' or a close paraphrase capturing both calming/anxiety AND sedation/sleep aspects (e.g., 'anxiety and sleep', 'sedation and calming nerves')",
+      "half_marks": "Captures only one aspect (e.g., 'anxiety' alone or 'sleep' alone) or is vague",
+      "zero_marks": "Names a wrong category or gives an unrelated answer"
+    },
+    "scoring": "LLM-as-judge against rubric. Accept the exact category name or any reasonable paraphrase.",
+    "reasoning": "Must resolve brand name 'Xanax' to generic 'Alprazolam' and then to its category."
+  },
+  {
+    "id": "BG-02",
+    "category": "brand_generic_resolution",
+
+    "question": "Does Tylenol have the same side effects as Motrin?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Boolean must be correct. Bonus for noting they share zero overlapping side effects. Tylenol (Pain Relief) SE: Confusion, Constipation, Dizziness, Drowsiness, Dry mouth, Queasiness, Rash, Throwing up. Motrin (Inflammation) SE: Risk of bleeding, Sleeplessness, Swelling, Upset stomach.",
+    "reasoning": "Two brand names from different categories. Zero overlap in side effects — a strong 'no'. Agent must resolve both brand names to their categories and compare."
+  },
+  {
+    "id": "BG-03",
+    "category": "brand_generic_resolution",
+
+    "question": "What's the brand name for Morphine?",
+    "answer_type": "free_text",
+    "expected_answer": "No brand name listed",
+    "scoring_rubric": {
+      "full_marks": "Clearly states that no brand name is listed/provided in the chart (e.g., 'None listed', 'N/A', 'The chart does not list a brand name for Morphine')",
+      "half_marks": "Ambiguous or hedging answer that neither confirms nor denies",
+      "zero_marks": "Provides an actual brand name (e.g., MS Contin, Kadian) — this is a hallucination and must score 0"
+    },
+    "scoring": "LLM-as-judge against rubric. Must indicate absence, not hallucinate a brand name.",
+    "reasoning": "Edge case: Morphine has no brand name in the PDF. Several drugs lack brand names (Morphine, Aspirin, Heparin, Scopolamine, etc.). Agent must NOT fabricate one from general knowledge."
+  },
+  {
+    "id": "XC-01",
+    "category": "cross_category_reasoning",
+
+    "question": "Which medication category in the chart has the most side effects listed?",
+    "answer_type": "free_text",
+    "expected_answer": "Pain Relief",
+    "scoring_rubric": {
+      "full_marks": "Names 'Pain Relief' and states it has 8 side effects (or lists them)",
+      "half_marks": "Names 'Pain Relief' but wrong count, OR names a close runner-up like 'Lowers Blood Pressure and Heart Rate' (7 side effects)",
+      "zero_marks": "Names a wrong category with fewer side effects"
+    },
+    "scoring": "LLM-as-judge against rubric. Pain Relief has 8 side effects, the most of any category. Runner-up is 'Lowers Blood Pressure and Heart Rate' with 7.",
+    "reasoning": "Agent must compare side effect counts across ALL 11 categories. Vector search can't easily do this — it would need to retrieve every category and count. Without structured access, the agent is likely to check only a few categories and miss the true maximum. Potential SQL query tool may suit this better: SELECT category, COUNT(*) as cnt FROM side_effects GROUP BY category ORDER BY cnt DESC LIMIT 1."
+  },
+  {
+    "id": "XC-02",
+    "category": "cross_category_reasoning",
+
+    "question": "A patient takes both Lisinopril and Tramadol. Which side effects are listed for both of these medications?",
+    "answer_type": "set",
+    "expected_answer": ["Dizziness"],
+    "scoring": "Set match. Lisinopril (Lowers BP) SE: {Cough, Dizziness, Lightheadedness}. Tramadol (Pain Relief) SE: {Confusion, Constipation, Dizziness, Drowsiness, Dry mouth, Queasiness, Rash, Throwing up}. Only Dizziness overlaps.",
+    "reasoning": "Must resolve both drug names to their categories, get side effects, and compute intersection. Only one side effect overlaps."
+  },
+  {
+    "id": "XC-03",
+    "category": "cross_category_reasoning",
+
+    "question": "Do blood thinners and cholesterol medications share any side effects?",
+    "answer_type": "set",
+    "expected_answer": ["Upset stomach"],
+    "scoring": "Set match. Blood Thinner SE: {Blood in stool or urine, Bruising, Risk of bleeding, Upset stomach}. Cholesterol SE: {Headache, Muscle pain, Upset stomach}. Intersection = {Upset stomach}.",
+    "reasoning": "Must retrieve side effects for two medication groups using colloquial terms ('blood thinners', 'cholesterol medications') and compute intersection."
+  },
+  {
+    "id": "NA-01",
+    "category": "negation_absence",
+
+    "question": "My patient is on Losartan for blood pressure. Should I warn them about headache as a possible side effect based on this chart?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. Losartan → 'Lowers Blood Pressure' category. That category's side effects: {Cough, Dizziness, Lightheadedness}. Headache is NOT listed. However, the similarly-named 'Lowers Blood Pressure and Heart Rate' category DOES list Headache. Agent must not conflate the two.",
+    "reasoning": "Two categories have near-identical names: 'Lowers Blood Pressure' vs 'Lowers Blood Pressure and Heart Rate'. Vector search for 'Losartan headache blood pressure' may return chunks from either. The agent must precisely resolve Losartan to the correct category. This is a realistic clinical question and exposes the tool's weakness with near-duplicate category names. Potential SQL query tool may suit this better: SELECT EXISTS(SELECT 1 FROM side_effects se JOIN drugs d ... WHERE d.name='Losartan' AND se.name='Headache')."
+  },
+  {
+    "id": "NA-02",
+    "category": "negation_absence",
+
+    "question": "Is dizziness listed as a side effect of any antibiotic in the chart?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. Antibiotic SE: {Diarrhea, Headache, Rash/flushing, Throwing up, Upset stomach}. Dizziness is NOT listed.",
+    "reasoning": "Dizziness appears in 6 of 11 categories, so an agent relying on general medical knowledge rather than the PDF's specific data would likely answer incorrectly."
+  },
+  {
+    "id": "NA-03",
+    "category": "negation_absence",
+
+    "question": "Is constipation listed as a side effect of any cholesterol medication?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. Lowers Cholesterol SE: {Headache, Muscle pain, Upset stomach}. Constipation is NOT listed.",
+    "reasoning": "Agent must not confuse 'Upset stomach' with 'Constipation'. Both are GI-related but distinct in the PDF."
+  },
+  {
+    "id": "AG-01",
+    "category": "aggregation_counting",
+
+    "question": "How many total unique side effects are listed across the entire chart?",
+    "answer_type": "number",
+    "expected_answer": 21,
+    "scoring": "Exact number match. The 21 unique side effects are: Confusion, Constipation, Dizziness, Drowsiness, Dry mouth, Queasiness, Rash, Throwing up, Fatigue, Headache, Diarrhea, Upset stomach, Muscle pain, Blood in stool or urine, Bruising, Risk of bleeding, Lightheadedness, Swelling, Cough, Rash/flushing, Sleeplessness. Note: 'Rash' (Pain Relief) and 'Rash/flushing' (Antibiotic) are distinct entries in the chart.",
+    "reasoning": "Agent must enumerate ALL side effects from ALL 11 categories and deduplicate. Key trap: 'Rash' and 'Rash/flushing' are listed as distinct entries — merging them gives 20 instead of 21. Requires exhaustive coverage of the entire document. Potential SQL query tool may suit this better: SELECT COUNT(DISTINCT side_effect_name) FROM side_effects."
+  },
+  {
+    "id": "AG-02",
+    "category": "aggregation_counting",
+
+    "question": "My patient takes Metoprolol, Lisinopril, Atorvastatin, Warfarin, and Omeprazole. How many unique side effects should I monitor for across all five medications?",
+    "answer_type": "number",
+    "expected_answer": 14,
+    "scoring": "Exact number match. Metoprolol → BP+HR: {Dizziness, Drowsiness, Headache, Lightheadedness, Upset stomach, Swelling, Throwing up} (7). Lisinopril → BP: {Cough, Dizziness, Lightheadedness} (3). Atorvastatin → Cholesterol: {Headache, Muscle pain, Upset stomach} (3). Warfarin → Blood Thinner: {Blood in stool or urine, Bruising, Risk of bleeding, Upset stomach} (4). Omeprazole → Heartburn: {Constipation, Diarrhea, Headache, Throwing up, Upset stomach} (5). Deduplicated union = {Blood in stool or urine, Bruising, Constipation, Cough, Diarrhea, Dizziness, Drowsiness, Headache, Lightheadedness, Muscle pain, Risk of bleeding, Swelling, Throwing up, Upset stomach} = 14.",
+    "reasoning": "Agent must: (1) resolve 5 drugs to 5 different categories, (2) retrieve side effects for each, (3) deduplicate the union across overlapping sets, (4) count. Requires 5+ search calls and correct deduplication of 22 total items down to 14 unique. A realistic polypharmacy question for a patient on a common medication regimen. Potential SQL query tool may suit this better: SELECT COUNT(DISTINCT se.name) FROM drugs d JOIN categories c ... JOIN side_effects se ... WHERE d.name IN ('Metoprolol','Lisinopril','Atorvastatin','Warfarin','Omeprazole')."
+  },
+  {
+    "id": "DIS-01",
+    "category": "disambiguation",
+
+    "question": "Is 'Queasiness' a reason for taking medication, a side effect, or both?",
+    "answer_type": "free_text",
+    "expected_answer": "Both. 'Queasiness or Throwing Up' is listed as a reason for medicine (category with Ondansetron, Promethazine, Scopolamine), AND 'Queasiness' appears as a side effect of Pain Relief medications.",
+    "scoring_rubric": {
+      "full_marks": "Identifies BOTH roles with correct context (which category treats it, which category lists it as side effect)",
+      "half_marks": "Identifies only one role correctly",
+      "zero_marks": "Incorrect or only says one without acknowledging the other"
+    },
+    "scoring": "LLM-as-judge against rubric. Must identify BOTH roles.",
+    "reasoning": "The word 'Queasiness' appears in two different columns of the table — as part of a category name (Reason for Medicine) and as a side effect value. Agent must reason about column semantics."
+  },
+  {
+    "id": "DIS-02",
+    "category": "disambiguation",
+
+    "question": "The chart lists 'Throwing up' under both 'Reason for Medicine' and 'Side Effects.' Which specific medications are listed to treat throwing up?",
+    "answer_type": "set",
+    "expected_answer": ["Ondansetron", "Promethazine", "Scopolamine"],
+    "acceptable_aliases": {
+      "Ondansetron": ["Zofran"],
+      "Promethazine": ["Phenergan"]
+    },
+    "scoring": "Set match. Accept brand names. Full marks for all 3. Must NOT include medications that list 'Throwing up' as a side effect.",
+    "reasoning": "Agent must distinguish between 'Throwing up' as a reason for medicine (the 'Queasiness or Throwing Up' category) vs. 'Throwing up' appearing as a side effect in 5 other categories, and return only the medications that treat it."
+  },
+  {
+    "id": "AG-03",
+    "category": "aggregation_counting",
+
+    "question": "How many medication categories in the chart list 'Upset stomach' as a side effect?",
+    "answer_type": "number",
+    "expected_answer": 7,
+    "scoring": "Exact number match. The 7 categories are: Heartburn or Reflux, Lowers Cholesterol, Blood Thinner/Blood Clot Treatment, Heart Rhythm Problems, Lowers Blood Pressure and Heart Rate, Antibiotic, and Helps With Inflammation. The 4 categories that do NOT list it: Pain Relief, Queasiness or Throwing Up, Lowers Blood Pressure, Calms Nerves or Makes You Sleepy.",
+    "reasoning": "Agent must check all 11 medication categories for the presence of 'Upset stomach' in their side effects and count those that include it. With a vector search limit of 3 results, a single query for 'upset stomach side effect' cannot cover all 7 categories — the agent would need multiple searches or image fallback to achieve full coverage. Potential SQL query tool may suit this better: SELECT COUNT(*) FROM categories c JOIN side_effects se ON c.id = se.category_id WHERE se.name = 'Upset stomach'."
+  }
+]

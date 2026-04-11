@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.venv/
+milvus_lite.db
+screenshots/
+source_reference/
+.claude/
+screenshots/*.png
