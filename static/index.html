@@ -358,6 +358,84 @@
         .scrollable::-webkit-scrollbar-thumb { background: var(--border); }
         .scrollable::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
 
+        /* Citations */
+        .citation {
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 2px 8px;
+            font-size: 11px;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .citation:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Screenshot Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal {
+            background: var(--bg);
+            border: 2px solid var(--ink);
+            padding: 20px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            position: relative;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+        .modal-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 20px;
+        }
+        .modal-close {
+            background: transparent;
+            border: 1px solid var(--ink);
+            padding: 4px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            background: var(--ink);
+            color: var(--bg);
+        }
+        .modal img {
+            max-width: 100%;
+            border: 1px solid var(--border);
+        }
+        .modal-meta {
+            font-size: 11px;
+            color: var(--ink-muted);
+            margin-top: 8px;
+        }
+
         /* Footer */
         .footer {
             margin-top: 60px;
@@ -469,6 +547,18 @@
         <footer class="footer">
             Powered by LiteParse &middot; Milvus &middot; Claude
         </footer>
+    </div>
+
+    <!-- Screenshot Modal -->
+    <div class="modal-overlay" id="screenshotModal" onclick="closeModal(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">Source Document</span>
+                <button class="modal-close" onclick="document.getElementById('screenshotModal').classList.remove('active')">Close</button>
+            </div>
+            <img id="modalImage" src="" alt="Page screenshot">
+            <div class="modal-meta" id="modalMeta"></div>
+        </div>
     </div>
 
     <script>
@@ -706,13 +796,43 @@
             stepsList.scrollTop = stepsList.scrollHeight;
         }
 
-        // Render final answer
+        // Render final answer with clickable citations
         function renderAnswer(text) {
-            // Basic markdown: **bold**, newlines, bullet lists
             let html = esc(text);
+            // Bold
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Bullets
             html = html.replace(/\n- /g, '\n• ');
+            // Citations: [Source: filename | Page N | screenshot_path]
+            html = html.replace(
+                /\[Source:\s*([^|]+?)\s*\|\s*Page\s*(\d+)\s*\|\s*([^\]]+?)\]/g,
+                (match, file, page, path) => {
+                    const cleanFile = file.trim();
+                    const cleanPath = path.trim();
+                    return `<span class="citation" onclick="showScreenshot('${esc(cleanPath)}', '${esc(cleanFile)}', ${page})" title="Click to view source">${cleanFile} p.${page}</span>`;
+                }
+            );
             resultContent.innerHTML = `<div class="result-text">${html}</div>`;
+        }
+
+        // Screenshot modal
+        function showScreenshot(path, filename, page) {
+            const modal = document.getElementById('screenshotModal');
+            const img = document.getElementById('modalImage');
+            const title = document.getElementById('modalTitle');
+            const meta = document.getElementById('modalMeta');
+
+            title.textContent = filename;
+            meta.textContent = `Page ${page} — ${path}`;
+            img.src = `/api/screenshot/${path}`;
+            img.alt = `${filename} page ${page}`;
+            modal.classList.add('active');
+        }
+
+        function closeModal(event) {
+            if (event.target === event.currentTarget) {
+                event.currentTarget.classList.remove('active');
+            }
         }
 
         // Init

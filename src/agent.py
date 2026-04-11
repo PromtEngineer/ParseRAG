@@ -23,7 +23,18 @@ Follow this two-step process to answer queries:
 - Always start with 'search' before falling back to 'get_image'.
 - Use 'get_image' proactively when the query is visual in nature (e.g., charts, diagrams, tables) or when text snippets alone are inconclusive.
 - Base your answers strictly on retrieved content — do not rely on prior medical knowledge.
-- When counting or aggregating across the entire document, retrieve all pages to ensure completeness."""
+- When counting or aggregating across the entire document, retrieve all pages to ensure completeness.
+
+## Citations (IMPORTANT)
+You MUST cite your sources inline using this exact format: [Source: filename | Page N | screenshot_path]
+
+For example: According to the factsheet [Source: 01_NNMC_Medication_Side_Effects.pdf | Page 1 | screenshots/01_NNMC_Medication_Side_Effects/page_1.png], Warfarin is a blood thinner.
+
+Rules for citations:
+- Use the SOURCE, PAGE, and PAGE SCREENSHOT PATH from each search result
+- Place the citation immediately after the claim it supports
+- Every factual claim must have a citation
+- If multiple sources support a claim, include all citations"""
 
 TOOLS = [
     {
