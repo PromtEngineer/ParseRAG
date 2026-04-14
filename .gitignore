@@ -3,7 +3,11 @@ __pycache__/
 *.pyc
 .venv/
 milvus_lite.db
+.milvus_lite.db.lock
 screenshots/
 source_reference/
 .claude/
 screenshots/*.png
+run_server.sh
+eng.traineddata
+
