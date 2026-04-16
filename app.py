@@ -34,6 +34,7 @@ DEFAULT_PDF = "data/Medication_Side_Effect_Flyer.pdf"
 
 class QueryRequest(BaseModel):
     question: str
+    folder: str = ""
 
 
 class ProcessRequest(BaseModel):
@@ -105,8 +106,10 @@ async def query_agent(req: QueryRequest):
     if not req.question.strip():
         raise HTTPException(400, "Question is required")
 
+    folder = req.folder.strip() if req.folder else "."
+
     async def event_stream():
-        async for event in run_agent_stream(req.question):
+        async for event in run_agent_stream(req.question, folder=folder):
             yield f"data: {json.dumps(event)}\n\n"
         yield "data: [DONE]\n\n"
 
@@ -118,6 +121,29 @@ async def query_agent(req: QueryRequest):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.get("/api/folders")
+async def list_folders(path: str = "."):
+    """List folders in the given path for the folder browser."""
+    try:
+        base = Path(path).resolve()
+        if not base.exists() or not base.is_dir():
+            raise HTTPException(404, "Path not found")
+        folders = sorted(
+            f.name for f in base.iterdir()
+            if f.is_dir() and not f.name.startswith(".")
+        )
+        parent = str(base.parent) if base != base.parent else None
+        file_count = len([f for f in base.iterdir() if f.is_file()])
+        return {
+            "current": str(base),
+            "parent": parent,
+            "folders": folders,
+            "files_count": file_count,
+        }
+    except PermissionError:
+        raise HTTPException(403, "Permission denied")
 
 
 @app.get("/api/screenshot/{path:path}")

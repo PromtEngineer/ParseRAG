@@ -239,6 +239,12 @@
         .step.get_image { border-left-color: var(--purple); }
         .step.thinking { border-left-color: var(--amber); }
         .step.error { border-left-color: var(--accent); }
+        .step.scan_folder { border-left-color: #0891b2; }
+        .step.parse_file { border-left-color: var(--success); }
+        .step.preview_file { border-left-color: #0d9488; }
+        .step.grep { border-left-color: #ca8a04; }
+        .step.glob { border-left-color: #ea580c; }
+        .step.read_file { border-left-color: var(--ink-muted); }
 
         .step-header {
             display: flex;
@@ -309,7 +315,7 @@
             padding-top: 20px;
             border-top: 2px solid var(--ink);
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 20px;
         }
 
@@ -453,7 +459,7 @@
         <header class="masthead">
             <div class="title-block">
                 <h1 class="site-title">ParseRAG</h1>
-                <span class="version">LiteParse + Milvus + Claude</span>
+                <span class="version">LiteParse + Milvus + Claude + Agentic Search</span>
             </div>
             <div class="status-indicator">
                 <div class="status-dot" id="statusDot"></div>
@@ -477,10 +483,17 @@
 
         <!-- Query -->
         <section class="query-section">
-            <div class="query-label">Ask a question about the medical factsheet</div>
+            <div class="query-label">Ask a question or explore documents</div>
+            <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
+                <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-muted); white-space:nowrap;">Folder</span>
+                <input type="text" class="query-input" id="folderInput"
+                    value="data/documents"
+                    style="font-size:13px; padding:10px 14px; border:1px solid var(--border); border-right:1px solid var(--border);"
+                    autocomplete="off">
+            </div>
             <div class="query-row">
                 <input type="text" class="query-input" id="queryInput"
-                    placeholder="e.g. What category does Warfarin fall under?"
+                    placeholder="e.g. Scan the folder and summarize what documents are available"
                     autocomplete="off">
                 <button class="query-btn" id="queryBtn" onclick="executeQuery()">Execute</button>
             </div>
@@ -541,11 +554,15 @@
                 <div class="stat-value" id="statImages">0</div>
                 <div class="stat-label">Images</div>
             </div>
+            <div class="stat">
+                <div class="stat-value" id="statFsCalls">0</div>
+                <div class="stat-label">FS Explore</div>
+            </div>
         </div>
 
         <!-- Footer -->
         <footer class="footer">
-            Powered by LiteParse &middot; Milvus &middot; Claude
+            Powered by LiteParse &middot; Milvus &middot; Claude &middot; Agentic File Search
         </footer>
     </div>
 
@@ -696,7 +713,7 @@
                 const response = await fetch('/api/query', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question }),
+                    body: JSON.stringify({ question, folder: document.getElementById('folderInput').value.trim() }),
                 });
 
                 const reader = response.body.getReader();
@@ -746,9 +763,32 @@
                 }
 
                 case 'tool_call': {
-                    const detail = event.tool === 'search'
-                        ? `query: "${event.input.query}"${event.input.limit ? ` (limit: ${event.input.limit})` : ''}`
-                        : `path: ${event.input.image_path}`;
+                    let detail = '';
+                    const inp = event.input;
+                    switch (event.tool) {
+                        case 'search':
+                            detail = `query: "${inp.query}"${inp.limit ? ` (limit: ${inp.limit})` : ''}`;
+                            break;
+                        case 'get_image':
+                            detail = `path: ${inp.image_path}`;
+                            break;
+                        case 'scan_folder':
+                            detail = `directory: ${inp.directory}`;
+                            break;
+                        case 'preview_file':
+                        case 'parse_file':
+                        case 'read_file':
+                            detail = `file: ${inp.file_path}`;
+                            break;
+                        case 'grep':
+                            detail = `pattern: "${inp.pattern}" in ${inp.file_path}`;
+                            break;
+                        case 'glob':
+                            detail = `pattern: "${inp.pattern}" in ${inp.directory}`;
+                            break;
+                        default:
+                            detail = JSON.stringify(inp).slice(0, 150);
+                    }
                     addStep(event.tool, event.step, event.tool, detail, event.preview);
                     break;
                 }
@@ -761,6 +801,7 @@
                         document.getElementById('statToolCalls').textContent = event.stats.tool_calls;
                         document.getElementById('statSearches').textContent = event.stats.search_calls;
                         document.getElementById('statImages').textContent = event.stats.image_calls;
+                        document.getElementById('statFsCalls').textContent = event.stats.fs_calls || 0;
                     }
                     setStatus('Complete', 'active');
                     break;
