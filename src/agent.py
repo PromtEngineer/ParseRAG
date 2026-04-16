@@ -7,10 +7,13 @@ Combined tools:
   Filesystem (Live): scan_folder, preview_file, parse_file, read_file, grep, glob
 """
 import json
+import os
 import asyncio
 from typing import AsyncGenerator
 
 import anthropic
+
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 
 from .search import search, get_image_base64
 from .fs import (
@@ -314,7 +317,7 @@ def run_agent(query: str, folder: str = ".", verbose: bool = True) -> str:
 
     while True:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=CLAUDE_MODEL,
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
@@ -385,7 +388,7 @@ async def run_agent_stream(query: str, folder: str = ".") -> AsyncGenerator[dict
     try:
         while True:
             response = await client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=CLAUDE_MODEL,
                 max_tokens=4096,
                 system=SYSTEM_PROMPT,
                 tools=TOOLS,
