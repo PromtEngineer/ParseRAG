@@ -9,10 +9,10 @@ from liteparse import LiteParse
 from pymilvus import MilvusClient, DataType
 
 SCREENSHOT_DIR = "screenshots"
-EMBEDDING_MODEL = "gemini-embedding-001"
-EMBEDDING_DIM = 3072
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "3072"))
 COLLECTION_NAME = "parserag"
-MILVUS_DB_PATH = "./milvus_lite.db"
+MILVUS_DB_PATH = os.getenv("MILVUS_DB_PATH", "./milvus_lite.db")
 
 _parser = LiteParse()
 
