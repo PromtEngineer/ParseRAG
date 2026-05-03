@@ -559,7 +559,7 @@
     {
       "type": "arrow",
       "id": "arrow_4b",
-      "x": 770, "y": 842, "width": 0, "height": 58,
+      "x": 830, "y": 842, "width": 0, "height": 58,
       "strokeColor": "#6d28d9",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
@@ -586,7 +586,7 @@
     {
       "type": "rectangle",
       "id": "milvus_rect",
-      "x": 100, "y": 905, "width": 430, "height": 235,
+      "x": 100, "y": 905, "width": 500, "height": 235,
       "strokeColor": "#1e3a5f",
       "backgroundColor": "#3b82f6",
       "fillStyle": "solid",
@@ -671,9 +671,9 @@
       "type": "text",
       "id": "milvus_scale",
       "x": 120, "y": 1100,
-      "width": 390, "height": 20,
-      "text": "Scales: milvus_lite.db -> Zilliz Cloud",
-      "originalText": "Scales: milvus_lite.db -> Zilliz Cloud",
+      "width": 560, "height": 20,
+      "text": "Scales: milvus_lite.db -> Zilliz Cloud (Managed Milvus)",
+      "originalText": "Scales: milvus_lite.db -> Zilliz Cloud (Managed Milvus)",
       "fontSize": 13,
       "fontFamily": 3,
       "textAlign": "left",
@@ -701,7 +701,7 @@
     {
       "type": "rectangle",
       "id": "liteparse_rect",
-      "x": 570, "y": 905, "width": 430, "height": 235,
+      "x": 630, "y": 905, "width": 430, "height": 235,
       "strokeColor": "#047857",
       "backgroundColor": "#a7f3d0",
       "fillStyle": "solid",
@@ -725,7 +725,7 @@
     {
       "type": "text",
       "id": "liteparse_title",
-      "x": 590, "y": 915,
+      "x": 650, "y": 915,
       "width": 200, "height": 30,
       "text": "LiteParse",
       "originalText": "LiteParse",
@@ -755,7 +755,7 @@
     {
       "type": "text",
       "id": "liteparse_features",
-      "x": 590, "y": 955,
+      "x": 650, "y": 955,
       "width": 390, "height": 120,
       "text": "PDF Parsing\n\n  Layout-Aware Text Extraction\n  Page Screenshots (PNG)\n  Table/Column Preservation\n  Spatial Grid Projection",
       "originalText": "PDF Parsing\n\n  Layout-Aware Text Extraction\n  Page Screenshots (PNG)\n  Table/Column Preservation\n  Spatial Grid Projection",
